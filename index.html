@@ -25,12 +25,45 @@
         };
 
         // Initialize Firebase
+        console.log('🔥 Initializing Firebase...');
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-        const analytics = getAnalytics(app);
+        
+        // Test Firebase immediately
+        console.log('📊 Database object:', database);
+        console.log('🌐 Database URL:', database._delegate._repoInternal.repoInfo_.host);
+        
+        try {
+            const analytics = getAnalytics(app);
+            console.log('📈 Analytics initialized');
+        } catch (analyticsError) {
+            console.log('📈 Analytics failed (this is OK):', analyticsError.message);
+        }
         
         // Make Firebase available globally
         window.firebase = { database, ref, set, get, push, update, remove, onValue };
+        
+        // Immediate connection test
+        setTimeout(async () => {
+            console.log('🔍 Testing Firebase connection...');
+            try {
+                const testRef = ref(database, 'connectionTest');
+                await set(testRef, { timestamp: Date.now(), test: 'connection' });
+                console.log('✅ Firebase write test successful');
+                
+                const testSnapshot = await get(testRef);
+                if (testSnapshot.exists()) {
+                    console.log('✅ Firebase read test successful:', testSnapshot.val());
+                    window.updateConnectionStatus(true);
+                } else {
+                    console.log('❌ Firebase read test failed - no data');
+                    window.updateConnectionStatus(false);
+                }
+            } catch (error) {
+                console.error('❌ Firebase connection test failed:', error);
+                window.updateConnectionStatus(false);
+            }
+        }, 1000);
     </script>
 
     <style>
@@ -625,6 +658,7 @@
         }
 
         function updateConnectionStatus(connected) {
+            console.log('🔄 Connection status update:', connected ? 'CONNECTED' : 'DISCONNECTED');
             isConnected = connected;
             const statusEl = document.getElementById('connectionStatus');
             if (connected) {
@@ -635,6 +669,9 @@
                 statusEl.innerHTML = '🔴 Disconnected';
             }
         }
+
+        // Make updateConnectionStatus globally available
+        window.updateConnectionStatus = updateConnectionStatus;
 
         // Database operations
         async function getUserData(username) {
