@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commission Wallet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, push, update, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
+        
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCieZ5XsAoZ-QprddfDkyn2ZZ6LXFSHRs0",
+            authDomain: "commission-wallet.firebaseapp.com",
+            databaseURL: "https://commission-wallet-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "commission-wallet",
+            storageBucket: "commission-wallet.firebasestorage.app",
+            messagingSenderId: "438998425172",
+            appId: "1:438998425172:web:48cc72f53e1ebf5dae17c1",
+            measurementId: "G-F8HL16WH8E"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const analytics = getAnalytics(app);
+        
+        // Make Firebase available globally
+        window.firebase = { database, ref, set, get, push, update, remove, onValue };
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+        }
+
+        .container {
+            background: #111111;
+            border: 1px solid rgba(0, 51, 102, 0.4);
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0, 51, 102, 0.3), inset 0 0 20px rgba(0, 51, 102, 0.1);
+            padding: 2rem;
+            width: 90%;
+            max-width: 800px;
+            min-height: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #003366, #004080);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2, h3 {
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #003366, #004080);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 51, 102, 0.5);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #cccccc;
+            font-weight: 400;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        input[type="text"], input[type="password"], input[type="number"], textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid rgba(0, 51, 102, 0.4);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: rgba(0, 51, 102, 0.1);
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #003366;
+            box-shadow: 0 0 20px rgba(0, 51, 102, 0.4);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin: 0.5rem 0;
+            font-weight: 500;
+            font-family: 'Poppins', sans-serif;
+            box-shadow: 0 4px 20px rgba(0, 51, 102, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 51, 102, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #333333 0%, #555555 100%);
+            box-shadow: 0 4px 20px rgba(85, 85, 85, 0.2);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 8px 30px rgba(85, 85, 85, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.2);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 8px 30px rgba(255, 71, 87, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #2ed573 0%, #003366 100%);
+            box-shadow: 0 4px 20px rgba(46, 213, 115, 0.2);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 8px 30px rgba(46, 213, 115, 0.4);
+        }
+
+        .admin-btn {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            width: auto;
+            background: rgba(0, 51, 102, 0.2);
+            color: #004080;
+            border: 1px solid rgba(0, 51, 102, 0.4);
+            box-shadow: 0 0 10px rgba(0, 51, 102, 0.3);
+        }
+
+        .admin-btn:hover {
+            background: rgba(0, 51, 102, 0.3);
+            box-shadow: 0 0 20px rgba(0, 51, 102, 0.5);
+        }
+
+        .dashboard {
+            text-align: center;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, rgba(0, 51, 102, 0.2) 0%, rgba(0, 64, 128, 0.2) 100%);
+            border: 1px solid rgba(0, 51, 102, 0.4);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px;
+            margin: 2rem 0;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 51, 102, 0.3);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .balance-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            color: #4da6ff;
+            text-shadow: 0 0 20px rgba(0, 64, 128, 0.5);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .user-list {
+            display: grid;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .user-card {
+            background: rgba(17, 17, 17, 0.8);
+            border: 1px solid rgba(0, 51, 102, 0.3);
+            padding: 1rem;
+            border-radius: 15px;
+            border-left: 4px solid #003366;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 20px rgba(0, 51, 102, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .user-card:hover {
+            border-color: rgba(0, 51, 102, 0.5);
+            box-shadow: 0 8px 30px rgba(0, 51, 102, 0.3);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 0.25rem;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .user-balance {
+            color: #4da6ff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 64, 128, 0.4);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            width: auto;
+            min-width: 80px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: #111111;
+            border: 1px solid rgba(0, 51, 102, 0.4);
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 51, 102, 0.3);
+        }
+
+        .close {
+            color: #cccccc;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            right: 1rem;
+            top: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .close:hover {
+            color: #003366;
+            text-shadow: 0 0 10px rgba(0, 51, 102, 0.5);
+        }
+
+        .error-message {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            border-left: 4px solid #ff4757;
+            box-shadow: 0 0 10px rgba(255, 71, 87, 0.2);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .success-message {
+            background: rgba(46, 213, 115, 0.1);
+            color: #2ed573;
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            border-left: 4px solid #2ed573;
+            box-shadow: 0 0 10px rgba(46, 213, 115, 0.2);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .loading {
+            text-align: center;
+            color: #cccccc;
+            padding: 2rem;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .connected {
+            background: rgba(46, 213, 115, 0.2);
+            color: #2ed573;
+            border: 1px solid rgba(46, 213, 115, 0.3);
+        }
+
+        .disconnected {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            .user-card {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .user-actions {
+                justify-content: center;
+            }
+            
+            .balance-amount {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status disconnected">
+            🔴 Disconnected
+        </div>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page active">
+            <h1>Commission Wallet</h1>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+            <button class="btn" onclick="login()" id="loginBtn">Login</button>
+            <div id="loginError"></div>
+            <button class="btn admin-btn" onclick="showAdminLogin()">Admin</button>
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div id="adminLoginModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAdminLogin()">&times;</span>
+                <h2>Admin Login</h2>
+                <div class="form-group">
+                    <label for="adminPassword">Admin Password</label>
+                    <input type="password" id="adminPassword" placeholder="Enter admin password">
+                </div>
+                <button class="btn" onclick="adminLogin()">Login as Admin</button>
+                <div id="adminLoginError"></div>
+            </div>
+        </div>
+
+        <!-- Worker Dashboard -->
+        <div id="workerDashboard" class="page dashboard">
+            <h2>Welcome, <span id="workerName"></span></h2>
+            <div class="balance-card">
+                <h3>Current Commission</h3>
+                <div class="balance-amount" id="workerBalance">₱0.00</div>
+                <p>Last updated: <span id="lastUpdated"></span></p>
+            </div>
+            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="page">
+            <h2>Admin Dashboard</h2>
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                <button class="btn btn-success" onclick="showCreateUserModal()">Create Worker</button>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+            
+            <h3>Workers</h3>
+            <div id="userList" class="user-list">
+                <div class="loading">Loading workers...</div>
+            </div>
+            
+            <div id="adminMessage"></div>
+        </div>
+
+        <!-- Create User Modal -->
+        <div id="createUserModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeCreateUserModal()">&times;</span>
+                <h2>Create New Worker</h2>
+                <div class="form-group">
+                    <label for="newUsername">Username</label>
+                    <input type="text" id="newUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Password</label>
+                    <input type="password" id="newPassword" placeholder="Enter password">
+                </div>
+                <div class="form-group">
+                    <label for="newBalance">Initial Balance</label>
+                    <input type="number" id="newBalance" placeholder="0.00" step="0.01">
+                </div>
+                <button class="btn" onclick="createUser()">Create Worker</button>
+                <div id="createUserError"></div>
+            </div>
+        </div>
+
+        <!-- Edit Balance Modal -->
+        <div id="editBalanceModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeEditBalanceModal()">&times;</span>
+                <h2>Edit Balance - <span id="editUserName"></span></h2>
+                <div class="form-group">
+                    <label for="newBalanceAmount">New Balance</label>
+                    <input type="number" id="newBalanceAmount" step="0.01">
+                </div>
+                <button class="btn" onclick="updateBalance()">Update Balance</button>
+                <div id="editBalanceError"></div>
+            </div>
+        </div>
+
+        <!-- Add/Deduct Money Modal -->
+        <div id="adjustMoneyModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAdjustMoneyModal()">&times;</span>
+                <h2 id="adjustModalTitle">Adjust Balance</h2>
+                <div class="form-group">
+                    <label for="adjustAmount">Amount</label>
+                    <input type="number" id="adjustAmount" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="adjustDescription">Description</label>
+                    <textarea id="adjustDescription" placeholder="Enter a description for this transaction..."></textarea>
+                </div>
+                <button class="btn" onclick="adjustMoney()">Confirm</button>
+                <div id="adjustMoneyError"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentEditUser = null;
+        let adjustType = null;
+        let isConnected = false;
+        const ADMIN_PASSWORD = '21262621';
+
+        // Firebase helper functions
+        async function initializeFirebase() {
+            try {
+                // Test connection
+                const testRef = window.firebase.ref(window.firebase.database, 'test');
+                await window.firebase.set(testRef, { timestamp: Date.now() });
+                
+                updateConnectionStatus(true);
+                
+                // Initialize with demo user if no users exist
+                const usersRef = window.firebase.ref(window.firebase.database, 'users');
+                const snapshot = await window.firebase.get(usersRef);
+                
+                if (!snapshot.exists()) {
+                    await createDemoUser();
+                }
+                
+                // Set up real-time listeners
+                setupRealtimeListeners();
+                
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+                updateConnectionStatus(false);
+                showError('loginError', 'Failed to connect to database. Please check your Firebase configuration.');
+            }
+        }
+
+        async function createDemoUser() {
+            const demoUser = {
+                password: 'demo',
+                balance: 1250.75,
+                isAdmin: false,
+                transactions: [],
+                createdAt: Date.now()
+            };
+            
+            const userRef = window.firebase.ref(window.firebase.database, 'users/demo');
+            await window.firebase.set(userRef, demoUser);
+        }
+
+        function setupRealtimeListeners() {
+            const usersRef = window.firebase.ref(window.firebase.database, 'users');
+            window.firebase.onValue(usersRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    // Update UI if we're on admin dashboard
+                    if (currentUser === 'admin' && document.getElementById('adminDashboard').classList.contains('active')) {
+                        loadUserList();
+                    }
+                    // Update worker dashboard if logged in as worker
+                    else if (currentUser && currentUser !== 'admin' && document.getElementById('workerDashboard').classList.contains('active')) {
+                        updateWorkerDashboard();
+                    }
+                }
+            });
+        }
+
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                statusEl.innerHTML = '🟢 Connected';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusEl.innerHTML = '🔴 Disconnected';
+            }
+        }
+
+        // Database operations
+        async function getUserData(username) {
+            try {
+                const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
+                const snapshot = await window.firebase.get(userRef);
+                return snapshot.exists() ? snapshot.val() : null;
+            } catch (error) {
+                console.error('Error getting user data:', error);
+                return null;
+            }
+        }
+
+        async function saveUserData(username, userData) {
+            try {
+                const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
+                await window.firebase.set(userRef, userData);
+                return true;
+            } catch (error) {
+                console.error('Error saving user data:', error);
+                return false;
+            }
+        }
+
+        async function getAllUsers() {
+            try {
+                const usersRef = window.firebase.ref(window.firebase.database, 'users');
+                const snapshot = await window.firebase.get(usersRef);
+                return snapshot.exists() ? snapshot.val() : {};
+            } catch (error) {
+                console.error('Error getting all users:', error);
+                return {};
+            }
+        }
+
+        async function deleteUserData(username) {
+            try {
+                const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
+                await window.firebase.remove(userRef);
+                return true;
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                return false;
+            }
+        }
+
+        // Initialize
+        function init() {
+            updateTimestamp();
+            setInterval(updateTimestamp, 1000);
+            
+            // Initialize Firebase
+            initializeFirebase();
+        }
+
+        // Login functions
+        async function login() {
+            if (!isConnected) {
+                showError('loginError', 'Not connected to database');
+                return;
+            }
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showError('loginError', 'Please enter both username and password');
+                return;
+            }
+            
+            // Disable login button
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            
+            try {
+                const userData = await getUserData(username);
+                
+                if (userData && userData.password === password) {
+                    currentUser = username;
+                    if (userData.isAdmin) {
+                        showPage('adminDashboard');
+                        await loadUserList();
+                    } else {
+                        showPage('workerDashboard');
+                        await updateWorkerDashboard();
+                    }
+                    clearForm();
+                } else {
+                    showError('loginError', 'Invalid username or password');
+                }
+            } catch (error) {
+                showError('loginError', 'Login failed. Please try again.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        }
+
+        function showAdminLogin() {
+            document.getElementById('adminLoginModal').style.display = 'block';
+        }
+
+        function closeAdminLogin() {
+            document.getElementById('adminLoginModal').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+            clearError('adminLoginError');
+        }
+
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                currentUser = 'admin';
+                // Create admin user in Firebase if it doesn't exist
+                const adminData = {
+                    password: ADMIN_PASSWORD,
+                    balance: 0,
+                    isAdmin: true,
+                    createdAt: Date.now()
+                };
+                await saveUserData('admin', adminData);
+                
+                showPage('adminDashboard');
+                closeAdminLogin();
+                await loadUserList();
+            } else {
+                showError('adminLoginError', 'Invalid admin password');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            showPage('loginPage');
+            clearForm();
+        }
+
+        // Dashboard functions
+        async function updateWorkerDashboard() {
+            if (!currentUser || currentUser === 'admin') return;
+            
+            try {
+                const userData = await getUserData(currentUser);
+                if (userData) {
+                    document.getElementById('workerName').textContent = currentUser;
+                    document.getElementById('workerBalance').textContent = '₱' + userData.balance.toFixed(2);
+                }
+            } catch (error) {
+                console.error('Error updating worker dashboard:', error);
+            }
+        }
+
+        async function loadUserList() {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '<div class="loading">Loading workers...</div>';
+            
+            try {
+                const users = await getAllUsers();
+                userList.innerHTML = '';
+                
+                Object.keys(users).forEach(username => {
+                    if (!users[username].isAdmin && username !== 'admin') {
+                        const userCard = document.createElement('div');
+                        userCard.className = 'user-card';
+                        userCard.innerHTML = `
+                            <div class="user-info">
+                                <div class="user-name">${username}</div>
+                                <div class="user-balance">₱${users[username].balance.toFixed(2)}</div>
+                            </div>
+                            <div class="user-actions">
+                                <button class="btn btn-success btn-small" onclick="showAdjustMoney('${username}', 'add')">Add Money</button>
+                                <button class="btn btn-danger btn-small" onclick="showAdjustMoney('${username}', 'deduct')">Deduct Money</button>
+                                <button class="btn btn-secondary btn-small" onclick="showEditBalance('${username}')">Edit Balance</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteUser('${username}')">Delete</button>
+                            </div>
+                        `;
+                        userList.appendChild(userCard);
+                    }
+                });
+                
+                if (userList.children.length === 0) {
+                    userList.innerHTML = '<div class="loading">No workers found. Create one to get started!</div>';
+                }
+            } catch (error) {
+                console.error('Error loading user list:', error);
+                userList.innerHTML = '<div class="loading">Error loading workers</div>';
+            }
+        }
+
+        // User management functions
+        function showCreateUserModal() {
+            document.getElementById('createUserModal').style.display = 'block';
+        }
+
+        function closeCreateUserModal() {
+            document.getElementById('createUserModal').style.display = 'none';
+            clearCreateUserForm();
+        }
+
+        async function createUser() {
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const balance = parseFloat(document.getElementById('newBalance').value) || 0;
+            
+            if (!username || !password) {
+                showError('createUserError', 'Please enter both username and password');
+                return;
+            }
+            
+            try {
+                const existingUser = await getUserData(username);
+                if (existingUser) {
+                    showError('createUserError', 'Username already exists');
+                    return;
+                }
+                
+                const newUser = {
+                    password: password,
+                    balance: balance,
+                    isAdmin: false,
+                    transactions: [],
+                    createdAt: Date.now()
+                };
+                
+                const success = await saveUserData(username, newUser);
+                if (success) {
+                    await loadUserList();
+                    closeCreateUserModal();
+                    showSuccess('adminMessage', `Worker "${username}" created successfully`);
+                } else {
+                    showError('createUserError', 'Failed to create user. Please try again.');
+                }
+            } catch (error) {
+                showError('createUserError', 'Error creating user. Please try again.');
+            }
+        }
+
+        async function showEditBalance(username) {
+            currentEditUser = username;
+            document.getElementById('editUserName').textContent = username;
+            
+            try {
+                const userData = await getUserData(username);
+                if (userData) {
+                    document.getElementById('newBalanceAmount').value = userData.balance.toFixed(2);
+                    document.getElementById('editBalanceModal').style.display = 'block';
+                }
+            } catch (error) {
+                showError('adminMessage', 'Error loading user data');
+            }
+        }
+
+        function closeEditBalanceModal() {
+            document.getElementById('editBalanceModal').style.display = 'none';
+            currentEditUser = null;
+            clearError('editBalanceError');
+        }
+
+        async function updateBalance() {
+            const newBalance = parseFloat(document.getElementById('newBalanceAmount').value);
+            if (isNaN(newBalance)) {
+                showError('editBalanceError', 'Please enter a valid number');
+                return;
+            }
+            
+            try {
+                const userData = await getUserData(currentEditUser);
+                if (userData) {
+                    userData.balance = newBalance;
+                    userData.lastModified = Date.now();
+                    
+                    const success = await saveUserData(currentEditUser, userData);
+                    if (success) {
+                        await loadUserList();
+                        closeEditBalanceModal();
+                        showSuccess('adminMessage', `Balance updated for "${currentEditUser}"`);
+                    } else {
+                        showError('editBalanceError', 'Failed to update balance');
+                    }
+                }
+            } catch (error) {
+                showError('editBalanceError', 'Error updating balance');
+            }
+        }
+
+        function showAdjustMoney(username, type) {
+            currentEditUser = username;
+            adjustType = type;
+            document.getElementById('adjustModalTitle').textContent = 
+                type === 'add' ? `Add Money - ${username}` : `Deduct Money - ${username}`;
+            document.getElementById('adjustMoneyModal').style.display = 'block';
+        }
+
+        function closeAdjustMoneyModal() {
+            document.getElementById('adjustMoneyModal').style.display = 'none';
+            currentEditUser = null;
+            adjustType = null;
+            document.getElementById('adjustAmount').value = '';
+            document.getElementById('adjustDescription').value = '';
+            clearError('adjustMoneyError');
+        }
+
+        async function adjustMoney() {
+            const amount = parseFloat(document.getElementById('adjustAmount').value);
+            const description = document.getElementById('adjustDescription').value || 'No description provided';
+            
+            if (isNaN(amount) || amount <= 0) {
+                showError('adjustMoneyError', 'Please enter a valid positive amount');
+                return;
+            }
+            
+            try {
+                const userData = await getUserData(currentEditUser);
+                if (!userData) {
+                    showError('adjustMoneyError', 'User not found');
+                    return;
+                }
+                
+                const transaction = {
+                    type: adjustType,
+                    amount: amount,
+                    description: description,
+                    timestamp: new Date().toISOString(),
+                    admin: currentUser,
+                    id: Date.now()
+                };
+                
+                if (!userData.transactions) {
+                    userData.transactions = [];
+                }
+                
+                if (adjustType === 'add') {
+                    userData.balance += amount;
+                } else {
+                    userData.balance -= amount;
+                }
+                
+                userData.transactions.push(transaction);
+                userData.lastModified = Date.now();
+                
+                const success = await saveUserData(currentEditUser, userData);
+                if (success) {
+                    await loadUserList();
+                    closeAdjustMoneyModal();
+                    showSuccess('adminMessage', 
+                        `${adjustType === 'add' ? 'Added' : 'Deducted'} ₱${amount.toFixed(2)} ${adjustType === 'add' ? 'to' : 'from'} "${currentEditUser}"`);
+                } else {
+                    showError('adjustMoneyError', 'Failed to update balance');
+                }
+            } catch (error) {
+                showError('adjustMoneyError', 'Error adjusting balance');
+            }
+        }
+
+        async function deleteUser(username) {
+            if (confirm(`Are you sure you want to delete worker "${username}"?`)) {
+                try {
+                    const success = await deleteUserData(username);
+                    if (success) {
+                        await loadUserList();
+                        showSuccess('adminMessage', `Worker "${username}" deleted successfully`);
+                    } else {
+                        showError('adminMessage', 'Failed to delete user');
+                    }
+                } catch (error) {
+                    showError('adminMessage', 'Error deleting user');
+                }
+            }
+        }
+
+        // Utility functions
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="error-message">${message}</div>`;
+            setTimeout(() => clearError(elementId), 5000);
+        }
+
+        function showSuccess(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="success-message">${message}</div>`;
+            setTimeout(() => clearError(elementId), 5000);
+        }
+
+        function clearError(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        function clearForm() {
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            clearError('loginError');
+        }
+
+        function clearCreateUserForm() {
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('newBalance').value = '';
+            clearError('createUserError');
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            const timestamp = now.toLocaleString();
+            const element = document.getElementById('lastUpdated');
+            if (element) {
+                element.textContent = timestamp;
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const activeModal = document.querySelector('.modal[style*="block"]');
+                if (!activeModal && document.getElementById('loginPage').classList.contains('active')) {
+                    login();
+                } else if (document.getElementById('adminLoginModal').style.display === 'block') {
+                    adminLogin();
+                } else if (document.getElementById('createUserModal').style.display === 'block') {
+                    createUser();
+                } else if (document.getElementById('editBalanceModal').style.display === 'block') {
+                    updateBalance();
+                } else if (document.getElementById('adjustMoneyModal').style.display === 'block') {
+                    adjustMoney();
+                }
+            }
+        });
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
