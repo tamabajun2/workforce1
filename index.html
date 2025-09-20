@@ -6,12 +6,12 @@
     <title>Commission Wallet</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, set, get, push, update, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
-        
+    <!-- Firebase SDKs - Using Script Tags Instead of Modules -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+    
+    <script>
         // Your Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCieZ5XsAoZ-QprddfDkyn2ZZ6LXFSHRs0",
@@ -25,43 +25,52 @@
         };
 
         // Initialize Firebase
-        console.log('🔥 Initializing Firebase...');
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        console.log('🔥 Initializing Firebase with compat version...');
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
         
-        // Test Firebase immediately
-        console.log('📊 Database object:', database);
-        console.log('🌐 Database URL:', database._delegate._repoInternal.repoInfo_.host);
+        console.log('📊 Database initialized:', !!database);
+        console.log('🌐 App name:', firebase.app().name);
         
         try {
-            const analytics = getAnalytics(app);
+            const analytics = firebase.analytics();
             console.log('📈 Analytics initialized');
         } catch (analyticsError) {
             console.log('📈 Analytics failed (this is OK):', analyticsError.message);
         }
         
         // Make Firebase available globally
-        window.firebase = { database, ref, set, get, push, update, remove, onValue };
+        window.firebaseDatabase = database;
+        window.firebase = {
+            database: database,
+            ref: (path) => database.ref(path),
+            set: (ref, data) => ref.set(data),
+            get: (ref) => ref.once('value'),
+            push: (ref, data) => ref.push(data),
+            update: (ref, data) => ref.update(data),
+            remove: (ref) => ref.remove(),
+            onValue: (ref, callback) => ref.on('value', callback)
+        };
         
         // Immediate connection test
         setTimeout(async () => {
             console.log('🔍 Testing Firebase connection...');
             try {
-                const testRef = ref(database, 'connectionTest');
-                await set(testRef, { timestamp: Date.now(), test: 'connection' });
+                const testRef = database.ref('connectionTest');
+                await testRef.set({ timestamp: Date.now(), test: 'connection' });
                 console.log('✅ Firebase write test successful');
                 
-                const testSnapshot = await get(testRef);
+                const testSnapshot = await testRef.once('value');
                 if (testSnapshot.exists()) {
                     console.log('✅ Firebase read test successful:', testSnapshot.val());
-                    window.updateConnectionStatus(true);
+                    updateConnectionStatus(true);
                 } else {
                     console.log('❌ Firebase read test failed - no data');
-                    window.updateConnectionStatus(false);
+                    updateConnectionStatus(false);
                 }
             } catch (error) {
                 console.error('❌ Firebase connection test failed:', error);
-                window.updateConnectionStatus(false);
+                updateConnectionStatus(false);
             }
         }, 1000);
     </script>
@@ -676,8 +685,8 @@
         // Database operations
         async function getUserData(username) {
             try {
-                const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
-                const snapshot = await window.firebase.get(userRef);
+                const userRef = window.firebaseDatabase.ref(`users/${username}`);
+                const snapshot = await userRef.once('value');
                 
                 // If we successfully read data, update connection status
                 if (snapshot.exists()) {
@@ -694,8 +703,8 @@
 
         async function saveUserData(username, userData) {
             try {
-                const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
-                await window.firebase.set(userRef, userData);
+                const userRef = window.firebaseDatabase.ref(`users/${username}`);
+                await userRef.set(userData);
                 
                 // If save is successful, update connection status
                 updateConnectionStatus(true);
@@ -709,8 +718,8 @@
 
         async function getAllUsers() {
             try {
-                const usersRef = window.firebase.ref(window.firebase.database, 'users');
-                const snapshot = await window.firebase.get(usersRef);
+                const usersRef = window.firebaseDatabase.ref('users');
+                const snapshot = await usersRef.once('value');
                 
                 // If we successfully read data, update connection status
                 if (snapshot.exists()) {
@@ -727,11 +736,13 @@
 
         async function deleteUserData(username) {
             try {
-                const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
-                await window.firebase.remove(userRef);
+                const userRef = window.firebaseDatabase.ref(`users/${username}`);
+                await userRef.remove();
+                updateConnectionStatus(true);
                 return true;
             } catch (error) {
                 console.error('Error deleting user:', error);
+                updateConnectionStatus(false);
                 return false;
             }
         }
