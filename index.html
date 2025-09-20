@@ -540,27 +540,58 @@
         // Firebase helper functions
         async function initializeFirebase() {
             try {
-                // Test connection
+                // Test connection with a simple write/read
                 const testRef = window.firebase.ref(window.firebase.database, 'test');
                 await window.firebase.set(testRef, { timestamp: Date.now() });
                 
+                // If we get here, connection is successful
                 updateConnectionStatus(true);
+                console.log('✅ Firebase connected successfully');
                 
                 // Initialize with demo user if no users exist
-                const usersRef = window.firebase.ref(window.firebase.database, 'users');
-                const snapshot = await window.firebase.get(usersRef);
-                
-                if (!snapshot.exists()) {
-                    await createDemoUser();
-                }
+                await initializeDemoUser();
                 
                 // Set up real-time listeners
                 setupRealtimeListeners();
                 
             } catch (error) {
-                console.error('Firebase initialization failed:', error);
+                console.error('❌ Firebase initialization failed:', error);
                 updateConnectionStatus(false);
-                showError('loginError', 'Failed to connect to database. Please check your Firebase configuration.');
+                
+                // Try alternative connection test
+                setTimeout(testAlternativeConnection, 2000);
+            }
+        }
+
+        async function testAlternativeConnection() {
+            try {
+                const usersRef = window.firebase.ref(window.firebase.database, 'users');
+                const snapshot = await window.firebase.get(usersRef);
+                
+                // If we can read data, connection is working
+                updateConnectionStatus(true);
+                console.log('✅ Firebase connected (alternative test successful)');
+                
+                await initializeDemoUser();
+                setupRealtimeListeners();
+                
+            } catch (error) {
+                console.error('❌ Alternative connection test failed:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function initializeDemoUser() {
+            try {
+                const usersRef = window.firebase.ref(window.firebase.database, 'users');
+                const snapshot = await window.firebase.get(usersRef);
+                
+                if (!snapshot.exists()) {
+                    await createDemoUser();
+                    console.log('✅ Demo user created');
+                }
+            } catch (error) {
+                console.error('Error initializing demo user:', error);
             }
         }
 
@@ -610,9 +641,16 @@
             try {
                 const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
                 const snapshot = await window.firebase.get(userRef);
+                
+                // If we successfully read data, update connection status
+                if (snapshot.exists()) {
+                    updateConnectionStatus(true);
+                }
+                
                 return snapshot.exists() ? snapshot.val() : null;
             } catch (error) {
                 console.error('Error getting user data:', error);
+                updateConnectionStatus(false);
                 return null;
             }
         }
@@ -621,9 +659,13 @@
             try {
                 const userRef = window.firebase.ref(window.firebase.database, `users/${username}`);
                 await window.firebase.set(userRef, userData);
+                
+                // If save is successful, update connection status
+                updateConnectionStatus(true);
                 return true;
             } catch (error) {
                 console.error('Error saving user data:', error);
+                updateConnectionStatus(false);
                 return false;
             }
         }
@@ -632,9 +674,16 @@
             try {
                 const usersRef = window.firebase.ref(window.firebase.database, 'users');
                 const snapshot = await window.firebase.get(usersRef);
+                
+                // If we successfully read data, update connection status
+                if (snapshot.exists()) {
+                    updateConnectionStatus(true);
+                }
+                
                 return snapshot.exists() ? snapshot.val() : {};
             } catch (error) {
                 console.error('Error getting all users:', error);
+                updateConnectionStatus(false);
                 return {};
             }
         }
@@ -661,11 +710,6 @@
 
         // Login functions
         async function login() {
-            if (!isConnected) {
-                showError('loginError', 'Not connected to database');
-                return;
-            }
-
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
@@ -683,6 +727,9 @@
                 const userData = await getUserData(username);
                 
                 if (userData && userData.password === password) {
+                    // Connection is working if we can read data
+                    updateConnectionStatus(true);
+                    
                     currentUser = username;
                     if (userData.isAdmin) {
                         showPage('adminDashboard');
@@ -696,6 +743,7 @@
                     showError('loginError', 'Invalid username or password');
                 }
             } catch (error) {
+                console.error('Login error:', error);
                 showError('loginError', 'Login failed. Please try again.');
             } finally {
                 loginBtn.disabled = false;
